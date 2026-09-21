@@ -6,6 +6,7 @@ import VideoPane from "./VideoPane";
 import SeekBar from "./SeekBar";
 import PlayButton from "./PlayButton";
 import SpeedControl from "./SpeedControl";
+import MuteButton from "./MuteButton";
 
 interface ComparePanelProps {
   modelSrc: string;
@@ -32,6 +33,8 @@ export default function ComparePanel({
     relativeTime,
     windowLength,
     playbackRate,
+    muted,
+    toggleMuted,
     togglePlay,
     seekTo,
     setRate,
@@ -62,7 +65,8 @@ export default function ComparePanel({
 
       <SeekBar relativeTime={relativeTime} windowLength={windowLength} onSeek={seekTo} />
 
-      <div className="flex justify-center">
+      <div className="flex items-center justify-center gap-4">
+        <MuteButton muted={muted} onToggle={toggleMuted} />
         <PlayButton isPlaying={isPlaying} onToggle={togglePlay} disabled={!ready} />
       </div>
 

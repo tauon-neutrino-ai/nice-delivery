@@ -18,6 +18,7 @@ export function useSyncedPlayback({ modelMarker, ownMarker }: UseSyncedPlaybackA
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackRate, setPlaybackRateState] = useState(1);
   const [relativeTime, setRelativeTime] = useState(0);
+  const [muted, setMutedState] = useState(true);
 
   const rafIdRef = useRef<number | null>(null);
   const tickRef = useRef<() => void>(() => {});
@@ -26,6 +27,7 @@ export function useSyncedPlayback({ modelMarker, ownMarker }: UseSyncedPlaybackA
   const playbackRateRef = useRef(1);
   const relativeTimeRef = useRef(0);
   const lastUiPushRef = useRef(0);
+  const mutedRef = useRef(true);
 
   const ready = modelDuration !== null && ownDuration !== null;
 
@@ -114,8 +116,10 @@ export function useSyncedPlayback({ modelMarker, ownMarker }: UseSyncedPlaybackA
     ownVideo.currentTime = ownClipStart + startRelative;
     modelVideo.playbackRate = playbackRateRef.current;
     ownVideo.playbackRate = playbackRateRef.current;
-    modelVideo.play();
-    ownVideo.play();
+    modelVideo.muted = mutedRef.current;
+    ownVideo.muted = mutedRef.current;
+    modelVideo.play().catch((err) => console.error("model video play failed", err));
+    ownVideo.play().catch((err) => console.error("own video play failed", err));
 
     playStartWallClockRef.current = performance.now() - (startRelative / playbackRateRef.current) * 1000;
     isPlayingRef.current = true;
@@ -163,6 +167,15 @@ export function useSyncedPlayback({ modelMarker, ownMarker }: UseSyncedPlaybackA
     if (ownVideoRef.current) ownVideoRef.current.playbackRate = rate;
   }, []);
 
+  const setMuted = useCallback((value: boolean) => {
+    mutedRef.current = value;
+    setMutedState(value);
+    if (modelVideoRef.current) modelVideoRef.current.muted = value;
+    if (ownVideoRef.current) ownVideoRef.current.muted = value;
+  }, []);
+
+  const toggleMuted = useCallback(() => setMuted(!mutedRef.current), [setMuted]);
+
   const handleModelLoadedMetadata = useCallback(() => {
     setModelDuration(modelVideoRef.current?.duration ?? null);
   }, []);
@@ -174,8 +187,14 @@ export function useSyncedPlayback({ modelMarker, ownMarker }: UseSyncedPlaybackA
   // so the compare screen shows the right starting frame before Play is ever pressed.
   useEffect(() => {
     if (!ready) return;
-    if (modelVideoRef.current) modelVideoRef.current.currentTime = modelClipStart;
-    if (ownVideoRef.current) ownVideoRef.current.currentTime = ownClipStart;
+    if (modelVideoRef.current) {
+      modelVideoRef.current.currentTime = modelClipStart;
+      modelVideoRef.current.muted = mutedRef.current;
+    }
+    if (ownVideoRef.current) {
+      ownVideoRef.current.currentTime = ownClipStart;
+      ownVideoRef.current.muted = mutedRef.current;
+    }
     pushRelativeTime(0, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, modelClipStart, ownClipStart]);
@@ -192,6 +211,8 @@ export function useSyncedPlayback({ modelMarker, ownMarker }: UseSyncedPlaybackA
     preRoll,
     postRoll,
     playbackRate,
+    muted,
+    toggleMuted,
     togglePlay,
     seekTo,
     setRate,

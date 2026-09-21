@@ -77,9 +77,9 @@ export default function KurabeteApp() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[--color-bg] p-4">
-      <div className="w-full max-w-md rounded-3xl border border-[--color-card-border] bg-[--color-card] p-5 shadow-xl">
-        <div className="mb-5 flex flex-col items-center gap-1">
+    <div className="min-h-screen bg-[--color-bg]">
+      <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-2.5 py-4">
+        <div className="flex flex-col items-center gap-1">
           <h1 className="text-xl font-bold text-[--color-text-primary]">ナイスデリバリー</h1>
           <SquiggleUnderline />
         </div>

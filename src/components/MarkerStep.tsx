@@ -59,6 +59,7 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
           ref={videoRef}
           src={state.src ?? undefined}
           playsInline
+          muted
           preload="metadata"
           className="h-full w-full object-contain"
           onLoadedMetadata={(e) => setDuration(e.currentTarget.duration)}
