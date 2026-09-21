@@ -5,8 +5,6 @@ import { MarkTarget, SlotState, VideoSlot } from "@/lib/types";
 import { formatTimePrecise } from "@/lib/format";
 
 const FRAME_STEP = 1 / 30;
-const FINE_STEP = 0.1;
-const FINE_WINDOW = 1;
 
 function TickRuler({
   min,
@@ -56,7 +54,6 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
-  const [fineCenter, setFineCenter] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
   const borderClass = accent === "cyan" ? "border-[--color-cyan]" : "border-[--color-orange]";
@@ -70,7 +67,6 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
     const next = Math.min(Math.max(video.currentTime + delta, 0), duration);
     video.currentTime = next;
     setCurrentTime(next);
-    setFineCenter(next);
   };
 
   const togglePreview = () => {
@@ -85,17 +81,7 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
     }
   };
 
-  const handleCoarseSeek = (value: number) => {
-    const video = videoRef.current;
-    if (!video) return;
-    video.pause();
-    setIsPlaying(false);
-    video.currentTime = value;
-    setCurrentTime(value);
-    setFineCenter(value);
-  };
-
-  const handleFineSeek = (value: number) => {
+  const handleSeek = (value: number) => {
     const video = videoRef.current;
     if (!video) return;
     video.pause();
@@ -103,9 +89,6 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
     video.currentTime = value;
     setCurrentTime(value);
   };
-
-  const fineMin = Math.max(0, fineCenter - FINE_WINDOW);
-  const fineMax = Math.min(duration || 0, fineCenter + FINE_WINDOW);
 
   return (
     <div className="flex flex-col gap-2">
@@ -126,7 +109,6 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
       </div>
 
       <div className="flex items-center justify-between text-xs text-[--color-text-muted]">
-        <span>全体</span>
         <span className="font-mono text-[--color-text-primary]">{formatTimePrecise(currentTime)}</span>
         <span>{formatTimePrecise(duration)}</span>
       </div>
@@ -136,27 +118,11 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
         max={duration || 0}
         step={0.01}
         value={currentTime}
-        onChange={(e) => handleCoarseSeek(Number(e.target.value))}
+        onChange={(e) => handleSeek(Number(e.target.value))}
         className="w-full"
-        aria-label={`${label}の再生位置(全体)`}
+        aria-label={`${label}の再生位置`}
       />
       <TickRuler min={0} max={duration || 0} minorStep={1} majorEvery={5} />
-
-      <div className="flex items-center justify-between text-xs text-[--color-text-muted]">
-        <span>微調整(±{FINE_WINDOW}秒)</span>
-        <span className="font-mono text-[--color-text-primary]">0.1秒単位</span>
-      </div>
-      <input
-        type="range"
-        min={fineMin}
-        max={fineMax}
-        step={FINE_STEP}
-        value={Math.min(Math.max(currentTime, fineMin), fineMax)}
-        onChange={(e) => handleFineSeek(Number(e.target.value))}
-        className="w-full"
-        aria-label={`${label}の再生位置(微調整)`}
-      />
-      <TickRuler min={fineMin} max={fineMax} minorStep={FINE_STEP} majorEvery={5} />
 
       <div className="flex items-center justify-center gap-2">
         <button
