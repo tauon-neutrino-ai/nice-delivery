@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { SlotState, VideoSlot } from "@/lib/types";
+import { MarkTarget, SlotState, VideoSlot } from "@/lib/types";
 import { formatTime } from "@/lib/format";
 
 const FRAME_STEP = 1 / 30;
@@ -129,22 +129,35 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
 }
 
 interface MarkerStepProps {
+  target: MarkTarget;
   model: SlotState;
   own: SlotState;
   onSetMarker: (slot: VideoSlot, time: number) => void;
   onNext: () => void;
 }
 
-export default function MarkerStep({ model, own, onSetMarker, onNext }: MarkerStepProps) {
-  const canProceed = model.marker !== null && own.marker !== null;
+export default function MarkerStep({ target, model, own, onSetMarker, onNext }: MarkerStepProps) {
+  const showModel = target === "both" || target === "model";
+  const showOwn = target === "both" || target === "own";
+
+  const canProceed =
+    target === "both"
+      ? model.marker !== null && own.marker !== null
+      : target === "model"
+        ? model.marker !== null
+        : own.marker !== null;
 
   return (
     <div className="flex flex-col gap-6">
       <p className="text-center text-xs text-[--color-text-muted]">
-        両方の動画で、ハックを蹴った瞬間にスクロールして「ここでハックを蹴った」を押してください
+        ハックを蹴った瞬間にスクロールして「ここでハックを蹴った」を押してください
       </p>
-      <MarkerVideoRow slot="model" label="お手本" accent="cyan" state={model} onSetMarker={onSetMarker} />
-      <MarkerVideoRow slot="own" label="参加者" accent="orange" state={own} onSetMarker={onSetMarker} />
+      {showModel && (
+        <MarkerVideoRow slot="model" label="お手本" accent="cyan" state={model} onSetMarker={onSetMarker} />
+      )}
+      {showOwn && (
+        <MarkerVideoRow slot="own" label="あなた" accent="orange" state={own} onSetMarker={onSetMarker} />
+      )}
       <button
         type="button"
         onClick={onNext}

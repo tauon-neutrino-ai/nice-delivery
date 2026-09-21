@@ -50,7 +50,7 @@ export default function PickStep({ model, own, onPick, onNext }: PickStepProps) 
   return (
     <div className="flex flex-col gap-4">
       <SlotPicker slot="model" label="お手本" accent="cyan" state={model} onPick={onPick} />
-      <SlotPicker slot="own" label="参加者" accent="orange" state={own} onPick={onPick} />
+      <SlotPicker slot="own" label="あなた" accent="orange" state={own} onPick={onPick} />
       <button
         type="button"
         onClick={onNext}

@@ -9,14 +9,20 @@ interface Point {
   y: number;
 }
 
-function distance(a: ReactTouch, b: ReactTouch): number {
+const DOUBLE_TAP_ZOOM = 2.5;
+const DOUBLE_TAP_MAX_INTERVAL_MS = 300;
+const DOUBLE_TAP_MAX_DISTANCE_PX = 30;
+const TAP_MAX_DURATION_MS = 300;
+const TAP_MAX_MOVEMENT_PX = 10;
+
+function touchDistance(a: ReactTouch, b: ReactTouch): number {
   return Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY);
 }
 
-function midpointOf(a: ReactTouch, b: ReactTouch, containerRect: DOMRect): Point {
+function touchMidpoint(a: ReactTouch, b: ReactTouch, rect: DOMRect): Point {
   return {
-    x: (a.clientX + b.clientX) / 2 - containerRect.left - containerRect.width / 2,
-    y: (a.clientY + b.clientY) / 2 - containerRect.top - containerRect.height / 2,
+    x: (a.clientX + b.clientX) / 2 - rect.left - rect.width / 2,
+    y: (a.clientY + b.clientY) / 2 - rect.top - rect.height / 2,
   };
 }
 
@@ -25,13 +31,17 @@ export function useVideoZoomPan() {
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState<Point>({ x: 0, y: 0 });
 
-  const gestureRef = useRef<{
+  const scaleRef = useRef(1);
+  const translateRef = useRef<Point>({ x: 0, y: 0 });
+
+  const touchGestureRef = useRef<{
     mode: "pinch" | "pan" | null;
     startScale: number;
     startTranslate: Point;
     startDistance: number;
     startMidpoint: Point;
     startTouch: Point;
+    startTime: number;
   }>({
     mode: null,
     startScale: 1,
@@ -39,6 +49,14 @@ export function useVideoZoomPan() {
     startDistance: 0,
     startMidpoint: { x: 0, y: 0 },
     startTouch: { x: 0, y: 0 },
+    startTime: 0,
+  });
+  const lastTapRef = useRef<{ x: number; y: number; time: number } | null>(null);
+
+  const mouseDragRef = useRef<{ dragging: boolean; start: Point; startTranslate: Point }>({
+    dragging: false,
+    start: { x: 0, y: 0 },
+    startTranslate: { x: 0, y: 0 },
   });
 
   const clampTranslate = useCallback((point: Point, forScale: number): Point => {
@@ -53,91 +71,187 @@ export function useVideoZoomPan() {
     };
   }, []);
 
-  const onTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    const container = containerRef.current;
-    if (!container) return;
-    if (e.touches.length === 2) {
-      const rect = container.getBoundingClientRect();
-      gestureRef.current = {
-        mode: "pinch",
-        startScale: scale,
-        startTranslate: translate,
-        startDistance: distance(e.touches[0], e.touches[1]),
-        startMidpoint: midpointOf(e.touches[0], e.touches[1], rect),
-        startTouch: { x: 0, y: 0 },
-      };
-    } else if (e.touches.length === 1 && scale > 1) {
-      gestureRef.current = {
-        mode: "pan",
-        startScale: scale,
-        startTranslate: translate,
-        startDistance: 0,
-        startMidpoint: { x: 0, y: 0 },
-        startTouch: { x: e.touches[0].clientX, y: e.touches[0].clientY },
-      };
-    }
-  }, [scale, translate]);
-
-  const onTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    const gesture = gestureRef.current;
-    if (gesture.mode === "pinch" && e.touches.length === 2) {
-      e.preventDefault();
-      const newDistance = distance(e.touches[0], e.touches[1]);
-      const factor = newDistance / gesture.startDistance;
-      const newScale = Math.min(Math.max(gesture.startScale * factor, MIN_ZOOM), MAX_ZOOM);
-      const m = gesture.startMidpoint;
-      const ratio = newScale / gesture.startScale;
-      const newTranslate = clampTranslate(
-        {
-          x: m.x - (m.x - gesture.startTranslate.x) * ratio,
-          y: m.y - (m.y - gesture.startTranslate.y) * ratio,
-        },
-        newScale
-      );
-      setScale(newScale);
-      setTranslate(newTranslate);
-    } else if (gesture.mode === "pan" && e.touches.length === 1) {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - gesture.startTouch.x;
-      const dy = e.touches[0].clientY - gesture.startTouch.y;
-      setTranslate(
-        clampTranslate(
-          { x: gesture.startTranslate.x + dx, y: gesture.startTranslate.y + dy },
-          gesture.startScale
-        )
-      );
-    }
-  }, [clampTranslate]);
-
-  const onTouchEnd = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length === 0) {
-      gestureRef.current.mode = null;
-    }
+  const applyState = useCallback((newScale: number, newTranslate: Point) => {
+    scaleRef.current = newScale;
+    translateRef.current = newTranslate;
+    setScale(newScale);
+    setTranslate(newTranslate);
   }, []);
 
   const applyScale = useCallback(
     (newScale: number) => {
       const clampedScale = Math.min(Math.max(newScale, MIN_ZOOM), MAX_ZOOM);
-      setScale(clampedScale);
-      if (clampedScale === MIN_ZOOM) {
-        setTranslate({ x: 0, y: 0 });
-      } else {
-        setTranslate((prev) => clampTranslate(prev, clampedScale));
-      }
+      const newTranslate =
+        clampedScale === MIN_ZOOM ? { x: 0, y: 0 } : clampTranslate(translateRef.current, clampedScale);
+      applyState(clampedScale, newTranslate);
     },
-    [clampTranslate]
+    [applyState, clampTranslate]
   );
 
-  const zoomIn = useCallback(() => applyScale(scale + ZOOM_STEP), [applyScale, scale]);
-  const zoomOut = useCallback(() => applyScale(scale - ZOOM_STEP), [applyScale, scale]);
+  const zoomIn = useCallback(() => applyScale(scaleRef.current + ZOOM_STEP), [applyScale]);
+  const zoomOut = useCallback(() => applyScale(scaleRef.current - ZOOM_STEP), [applyScale]);
+
+  /** Zoom in/out anchored at a specific point (container-relative, origin at center), preserving that point under the cursor/finger. */
+  const zoomToggleAtPoint = useCallback(
+    (point: Point) => {
+      if (scaleRef.current > 1) {
+        applyState(MIN_ZOOM, { x: 0, y: 0 });
+        return;
+      }
+      const targetScale = Math.min(DOUBLE_TAP_ZOOM, MAX_ZOOM);
+      const ratio = targetScale / scaleRef.current;
+      const anchored = {
+        x: point.x - (point.x - translateRef.current.x) * ratio,
+        y: point.y - (point.y - translateRef.current.y) * ratio,
+      };
+      applyState(targetScale, clampTranslate(anchored, targetScale));
+    },
+    [applyState, clampTranslate]
+  );
+
+  const pointFromClient = useCallback((clientX: number, clientY: number): Point => {
+    const container = containerRef.current;
+    if (!container) return { x: 0, y: 0 };
+    const rect = container.getBoundingClientRect();
+    return { x: clientX - rect.left - rect.width / 2, y: clientY - rect.top - rect.height / 2 };
+  }, []);
+
+  // --- Touch: pinch to zoom, single-finger drag to pan, double-tap to zoom to point ---
+
+  const onTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
+    const container = containerRef.current;
+    if (!container) return;
+    if (e.touches.length === 2) {
+      const rect = container.getBoundingClientRect();
+      touchGestureRef.current = {
+        mode: "pinch",
+        startScale: scaleRef.current,
+        startTranslate: translateRef.current,
+        startDistance: touchDistance(e.touches[0], e.touches[1]),
+        startMidpoint: touchMidpoint(e.touches[0], e.touches[1], rect),
+        startTouch: { x: 0, y: 0 },
+        startTime: performance.now(),
+      };
+    } else if (e.touches.length === 1) {
+      const t = e.touches[0];
+      touchGestureRef.current = {
+        mode: scaleRef.current > 1 ? "pan" : null,
+        startScale: scaleRef.current,
+        startTranslate: translateRef.current,
+        startDistance: 0,
+        startMidpoint: { x: 0, y: 0 },
+        startTouch: { x: t.clientX, y: t.clientY },
+        startTime: performance.now(),
+      };
+    }
+  }, []);
+
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      const gesture = touchGestureRef.current;
+      if (gesture.mode === "pinch" && e.touches.length === 2) {
+        e.preventDefault();
+        const newDistance = touchDistance(e.touches[0], e.touches[1]);
+        const factor = newDistance / gesture.startDistance;
+        const newScale = Math.min(Math.max(gesture.startScale * factor, MIN_ZOOM), MAX_ZOOM);
+        const m = gesture.startMidpoint;
+        const ratio = newScale / gesture.startScale;
+        const newTranslate = clampTranslate(
+          {
+            x: m.x - (m.x - gesture.startTranslate.x) * ratio,
+            y: m.y - (m.y - gesture.startTranslate.y) * ratio,
+          },
+          newScale
+        );
+        applyState(newScale, newTranslate);
+      } else if (gesture.mode === "pan" && e.touches.length === 1) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - gesture.startTouch.x;
+        const dy = e.touches[0].clientY - gesture.startTouch.y;
+        const newTranslate = clampTranslate(
+          { x: gesture.startTranslate.x + dx, y: gesture.startTranslate.y + dy },
+          gesture.startScale
+        );
+        applyState(gesture.startScale, newTranslate);
+      }
+    },
+    [applyState, clampTranslate]
+  );
+
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent<HTMLDivElement>) => {
+      const gesture = touchGestureRef.current;
+      if (e.touches.length === 0) {
+        const changed = e.changedTouches[0];
+        const elapsed = performance.now() - gesture.startTime;
+        const moved = changed ? Math.hypot(changed.clientX - gesture.startTouch.x, changed.clientY - gesture.startTouch.y) : Infinity;
+        const wasTap = gesture.mode !== "pinch" && elapsed < TAP_MAX_DURATION_MS && moved < TAP_MAX_MOVEMENT_PX && changed;
+
+        if (wasTap && changed) {
+          const point = pointFromClient(changed.clientX, changed.clientY);
+          const lastTap = lastTapRef.current;
+          const now = performance.now();
+          if (
+            lastTap &&
+            now - lastTap.time < DOUBLE_TAP_MAX_INTERVAL_MS &&
+            Math.hypot(point.x - lastTap.x, point.y - lastTap.y) < DOUBLE_TAP_MAX_DISTANCE_PX
+          ) {
+            zoomToggleAtPoint(point);
+            lastTapRef.current = null;
+          } else {
+            lastTapRef.current = { x: point.x, y: point.y, time: now };
+          }
+        }
+        touchGestureRef.current.mode = null;
+      }
+    },
+    [pointFromClient, zoomToggleAtPoint]
+  );
+
+  // --- Mouse (desktop): drag to pan when zoomed in, double-click to zoom to point ---
+
+  const onMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (scaleRef.current <= 1) return;
+    mouseDragRef.current = {
+      dragging: true,
+      start: { x: e.clientX, y: e.clientY },
+      startTranslate: translateRef.current,
+    };
+  }, []);
+
+  const onMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const drag = mouseDragRef.current;
+      if (!drag.dragging) return;
+      const dx = e.clientX - drag.start.x;
+      const dy = e.clientY - drag.start.y;
+      const newTranslate = clampTranslate(
+        { x: drag.startTranslate.x + dx, y: drag.startTranslate.y + dy },
+        scaleRef.current
+      );
+      applyState(scaleRef.current, newTranslate);
+    },
+    [applyState, clampTranslate]
+  );
+
+  const endMouseDrag = useCallback(() => {
+    mouseDragRef.current.dragging = false;
+  }, []);
+
+  const onDoubleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      zoomToggleAtPoint(pointFromClient(e.clientX, e.clientY));
+    },
+    [pointFromClient, zoomToggleAtPoint]
+  );
 
   const onWheel = useCallback(
     (e: React.WheelEvent<HTMLDivElement>) => {
       if (!e.ctrlKey) return;
       e.preventDefault();
-      applyScale(scale - e.deltaY * 0.01);
+      applyScale(scaleRef.current - e.deltaY * 0.01);
     },
-    [applyScale, scale]
+    [applyScale]
   );
 
   const style = useMemo(
@@ -154,6 +268,16 @@ export function useVideoZoomPan() {
     style,
     zoomIn,
     zoomOut,
-    touchHandlers: { onTouchStart, onTouchMove, onTouchEnd, onWheel },
+    handlers: {
+      onTouchStart,
+      onTouchMove,
+      onTouchEnd,
+      onMouseDown,
+      onMouseMove,
+      onMouseUp: endMouseDrag,
+      onMouseLeave: endMouseDrag,
+      onDoubleClick,
+      onWheel,
+    },
   };
 }

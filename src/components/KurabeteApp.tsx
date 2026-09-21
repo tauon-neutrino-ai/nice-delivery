@@ -11,6 +11,7 @@ const emptySlot: SlotState = { file: null, src: null, marker: null };
 
 const initialState: AppState = {
   step: "pick",
+  markTarget: "both",
   model: emptySlot,
   own: emptySlot,
 };
@@ -23,7 +24,7 @@ function reducer(state: AppState, action: AppAction): AppState {
         [action.slot]: { file: action.file, src: action.src, marker: null },
       };
     case "GO_TO_MARK":
-      return { ...state, step: "mark" };
+      return { ...state, step: "mark", markTarget: "both" };
     case "SET_MARKER":
       return {
         ...state,
@@ -32,7 +33,14 @@ function reducer(state: AppState, action: AppAction): AppState {
     case "GO_TO_COMPARE":
       return { ...state, step: "compare" };
     case "ADJUST_MARKER":
-      return { ...state, step: "mark" };
+      return { ...state, step: "mark", markTarget: action.slot };
+    case "CHANGE_VIDEO":
+      return {
+        ...state,
+        [action.slot]: { file: action.file, src: action.src, marker: null },
+        step: "mark",
+        markTarget: action.slot,
+      };
     default:
       return state;
   }
@@ -64,6 +72,10 @@ export default function KurabeteApp() {
     dispatch({ type: "ADJUST_MARKER", slot });
   };
 
+  const handleChangeVideo = (slot: VideoSlot, file: File) => {
+    dispatch({ type: "CHANGE_VIDEO", slot, file, src: URL.createObjectURL(file) });
+  };
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-[--color-bg] p-4">
       <div className="w-full max-w-md rounded-3xl border border-[--color-card-border] bg-[--color-card] p-5 shadow-xl">
@@ -83,6 +95,7 @@ export default function KurabeteApp() {
 
         {state.step === "mark" && (
           <MarkerStep
+            target={state.markTarget}
             model={state.model}
             own={state.own}
             onSetMarker={handleSetMarker}
@@ -101,6 +114,7 @@ export default function KurabeteApp() {
               modelMarker={state.model.marker}
               ownMarker={state.own.marker}
               onAdjustMarker={handleAdjustMarker}
+              onChangeVideo={handleChangeVideo}
             />
           )}
       </div>

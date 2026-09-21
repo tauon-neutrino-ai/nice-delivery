@@ -13,6 +13,7 @@ interface ComparePanelProps {
   modelMarker: number;
   ownMarker: number;
   onAdjustMarker: (slot: VideoSlot) => void;
+  onChangeVideo: (slot: VideoSlot, file: File) => void;
 }
 
 export default function ComparePanel({
@@ -21,6 +22,7 @@ export default function ComparePanel({
   modelMarker,
   ownMarker,
   onAdjustMarker,
+  onChangeVideo,
 }: ComparePanelProps) {
   const {
     modelVideoRef,
@@ -46,14 +48,16 @@ export default function ComparePanel({
         accent="cyan"
         onLoadedMetadata={handleModelLoadedMetadata}
         onAdjustMarker={() => onAdjustMarker("model")}
+        onChangeVideo={(file) => onChangeVideo("model", file)}
       />
       <VideoPane
         videoRef={ownVideoRef}
         src={ownSrc}
-        label="参加者"
+        label="あなた"
         accent="orange"
         onLoadedMetadata={handleOwnLoadedMetadata}
         onAdjustMarker={() => onAdjustMarker("own")}
+        onChangeVideo={(file) => onChangeVideo("own", file)}
       />
 
       <SeekBar relativeTime={relativeTime} windowLength={windowLength} onSeek={seekTo} />
