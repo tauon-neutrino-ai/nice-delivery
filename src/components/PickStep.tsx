@@ -28,15 +28,15 @@ function SlotPicker({
     if (file) onPick(slot, file);
   };
 
-  const borderClass = accent === "cyan" ? "border-[--color-cyan]" : "border-[--color-orange]";
-  const textClass = accent === "cyan" ? "text-[--color-cyan]" : "text-[--color-orange]";
+  const borderClass = accent === "cyan" ? "border-(--color-cyan)" : "border-(--color-orange)";
+  const textClass = accent === "cyan" ? "text-(--color-cyan)" : "text-(--color-orange)";
 
   return (
     <label
       className={`flex cursor-pointer flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed ${borderClass} bg-black/20 px-4 py-8 text-center`}
     >
       <span className={`text-sm font-bold ${textClass}`}>{label}</span>
-      <span className="text-xs text-[--color-text-muted]">
+      <span className="text-xs text-(--color-text-muted)">
         {state.file ? state.file.name : "動画を選択してください"}
       </span>
       <input type="file" accept="video/*" className="hidden" onChange={handleChange} />
@@ -55,7 +55,7 @@ export default function PickStep({ model, own, onPick, onNext }: PickStepProps) 
         type="button"
         onClick={onNext}
         disabled={!canProceed}
-        className="rounded-full bg-[--color-play-blue] py-3 text-sm font-bold text-white disabled:opacity-30"
+        className="rounded-full bg-(--color-play-blue) py-3 text-sm font-bold text-white disabled:opacity-30"
       >
         次へ
       </button>

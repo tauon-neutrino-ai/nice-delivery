@@ -7,7 +7,7 @@ interface SpeedControlProps {
 
 export default function SpeedControl({ rate, onChange }: SpeedControlProps) {
   return (
-    <div className="flex gap-2 rounded-full bg-[--color-track] p-1">
+    <div className="flex gap-2 rounded-full bg-(--color-track) p-1">
       {PLAYBACK_RATES.map((r) => {
         const active = r === rate;
         return (
@@ -17,8 +17,8 @@ export default function SpeedControl({ rate, onChange }: SpeedControlProps) {
             onClick={() => onChange(r)}
             className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
               active
-                ? "bg-[--color-orange] text-[--color-card]"
-                : "text-[--color-text-muted]"
+                ? "bg-(--color-orange) text-(--color-card)"
+                : "text-(--color-text-muted)"
             }`}
           >
             {r}×

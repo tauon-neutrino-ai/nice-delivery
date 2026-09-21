@@ -14,8 +14,8 @@ interface VideoPaneProps {
 }
 
 const accentClasses = {
-  cyan: "border-[--color-cyan] text-[--color-cyan]",
-  orange: "border-[--color-orange] text-[--color-orange]",
+  cyan: "border-(--color-cyan) text-(--color-cyan)",
+  orange: "border-(--color-orange) text-(--color-orange)",
 };
 
 export default function VideoPane({
@@ -87,7 +87,7 @@ export default function VideoPane({
         </div>
       </div>
 
-      <div className="flex items-center justify-center gap-3 text-[10px] text-[--color-text-muted]">
+      <div className="flex items-center justify-center gap-3 text-[10px] text-(--color-text-muted)">
         <label className="cursor-pointer underline decoration-dotted underline-offset-2">
           動画を変更
           <input type="file" accept="video/*" className="hidden" onChange={handleFileChange} />

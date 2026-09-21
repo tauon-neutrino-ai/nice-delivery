@@ -9,7 +9,7 @@ export default function MuteButton({ muted, onToggle }: MuteButtonProps) {
       type="button"
       onClick={onToggle}
       aria-label={muted ? "音声をオンにする" : "音声をオフにする"}
-      className="flex items-center gap-1.5 rounded-full bg-[--color-track] px-3 py-2 text-xs font-semibold text-[--color-text-primary]"
+      className="flex items-center gap-1.5 rounded-full bg-(--color-track) px-3 py-2 text-xs font-semibold text-(--color-text-primary)"
     >
       {muted ? (
         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">

@@ -29,7 +29,7 @@ function TickRuler({
       {ticks.map((t, i) => (
         <span
           key={i}
-          className="absolute top-0 bg-[--color-text-muted]"
+          className="absolute top-0 bg-(--color-text-muted)"
           style={{
             left: `${t.pos}%`,
             width: "1px",
@@ -56,8 +56,8 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const borderClass = accent === "cyan" ? "border-[--color-cyan]" : "border-[--color-orange]";
-  const textClass = accent === "cyan" ? "text-[--color-cyan]" : "text-[--color-orange]";
+  const borderClass = accent === "cyan" ? "border-(--color-cyan)" : "border-(--color-orange)";
+  const textClass = accent === "cyan" ? "text-(--color-cyan)" : "text-(--color-orange)";
 
   const step = (delta: number) => {
     const video = videoRef.current;
@@ -108,8 +108,8 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
         />
       </div>
 
-      <div className="flex items-center justify-between text-xs text-[--color-text-muted]">
-        <span className="font-mono text-[--color-text-primary]">{formatTimePrecise(currentTime)}</span>
+      <div className="flex items-center justify-between text-xs text-(--color-text-muted)">
+        <span className="font-mono text-(--color-text-primary)">{formatTimePrecise(currentTime)}</span>
         <span>{formatTimePrecise(duration)}</span>
       </div>
       <input
@@ -128,21 +128,21 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
         <button
           type="button"
           onClick={() => step(-FRAME_STEP)}
-          className="rounded-full bg-[--color-track] px-3 py-1 text-xs text-[--color-text-primary]"
+          className="rounded-full bg-(--color-track) px-3 py-1 text-xs text-(--color-text-primary)"
         >
           -1コマ
         </button>
         <button
           type="button"
           onClick={togglePreview}
-          className="rounded-full bg-[--color-track] px-4 py-1 text-xs text-[--color-text-primary]"
+          className="rounded-full bg-(--color-track) px-4 py-1 text-xs text-(--color-text-primary)"
         >
           {isPlaying ? "一時停止" : "プレビュー再生"}
         </button>
         <button
           type="button"
           onClick={() => step(FRAME_STEP)}
-          className="rounded-full bg-[--color-track] px-3 py-1 text-xs text-[--color-text-primary]"
+          className="rounded-full bg-(--color-track) px-3 py-1 text-xs text-(--color-text-primary)"
         >
           +1コマ
         </button>
@@ -153,8 +153,8 @@ function MarkerVideoRow({ slot, label, accent, state, onSetMarker }: MarkerVideo
         onClick={() => onSetMarker(slot, currentTime)}
         className={`rounded-full py-2 text-sm font-bold ${
           state.marker !== null
-            ? "bg-[--color-track] text-[--color-text-primary]"
-            : "bg-[--color-play-blue] text-white"
+            ? "bg-(--color-track) text-(--color-text-primary)"
+            : "bg-(--color-play-blue) text-white"
         }`}
       >
         {state.marker !== null
@@ -186,7 +186,7 @@ export default function MarkerStep({ target, model, own, onSetMarker, onNext }: 
 
   return (
     <div className="flex flex-col gap-6">
-      <p className="text-center text-xs text-[--color-text-muted]">
+      <p className="text-center text-xs text-(--color-text-muted)">
         ハックを蹴った瞬間にスクロールして「ここでハックを蹴った」を押してください
       </p>
       {showModel && (
@@ -199,7 +199,7 @@ export default function MarkerStep({ target, model, own, onSetMarker, onNext }: 
         type="button"
         onClick={onNext}
         disabled={!canProceed}
-        className="rounded-full bg-[--color-play-blue] py-3 text-sm font-bold text-white disabled:opacity-30"
+        className="rounded-full bg-(--color-play-blue) py-3 text-sm font-bold text-white disabled:opacity-30"
       >
         次へ
       </button>

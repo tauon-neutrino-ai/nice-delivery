@@ -77,10 +77,10 @@ export default function KurabeteApp() {
   };
 
   return (
-    <div className="min-h-screen bg-[--color-bg]">
+    <div className="min-h-screen bg-(--color-bg)">
       <div className="mx-auto flex w-full max-w-md flex-col gap-4 px-2.5 py-4">
         <div className="flex flex-col items-center gap-1">
-          <h1 className="text-xl font-bold text-[--color-text-primary]">ナイスデリバリー</h1>
+          <h1 className="text-xl font-bold text-(--color-text-primary)">ナイスデリバリー</h1>
           <SquiggleUnderline />
         </div>
 

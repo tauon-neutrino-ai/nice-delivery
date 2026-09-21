@@ -11,7 +11,7 @@ export default function PlayButton({ isPlaying, onToggle, disabled }: PlayButton
       onClick={onToggle}
       disabled={disabled}
       aria-label={isPlaying ? "一時停止" : "再生"}
-      className="flex h-16 w-16 items-center justify-center rounded-full bg-[--color-play-blue] text-white shadow-lg shadow-blue-500/30 transition-transform active:scale-95 disabled:opacity-40 disabled:active:scale-100"
+      className="flex h-16 w-16 items-center justify-center rounded-full bg-(--color-play-blue) text-white shadow-lg shadow-blue-500/30 transition-transform active:scale-95 disabled:opacity-40 disabled:active:scale-100"
     >
       {isPlaying ? (
         <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor">
